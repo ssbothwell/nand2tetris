@@ -1,0 +1,182 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/05/CPU.hdl
+
+/**
+ * The Hack CPU (Central Processing unit), consisting of an ALU,
+ * two registers named A and D, and a program counter named PC.
+ * The CPU is designed to fetch and execute instructions written in 
+ * the Hack machine language. In particular, functions as follows:
+ * Executes the inputted instruction according to the Hack machine 
+ * language specification. The D and A in the language specification
+ * refer to CPU-resident registers, while M refers to the external
+ * memory location addressed by A, i.e. to Memory[A]. The inM input 
+ * holds the value of this location. If the current instruction needs 
+ * to write a value to M, the value is placed in outM, the address 
+ * of the target location is placed in the addressM output, and the 
+ * writeM control bit is asserted. (When writeM==0, any value may 
+ * appear in outM). The outM and writeM outputs are combinational: 
+ * they are affected instantaneously by the execution of the current 
+ * instruction. The addressM and pc outputs are clocked: although they 
+ * are affected by the execution of the current instruction, they commit 
+ * to their new values only in the next time step. If reset==1 then the 
+ * CPU jumps to address 0 (i.e. pc is set to 0 in next time step) rather 
+ * than to the address resulting from executing the current instruction. 
+ */
+
+CHIP CPU {
+
+    IN  inM[16],         // M value input  (M = contents of RAM[A])
+        instruction[16], // Instruction for execution
+        reset;           // Signals whether to re-start the current
+                         // program (reset==1) or continue executing
+                         // the current program (reset==0).
+
+    OUT outM[16],        // M value output
+        writeM,          // Write to M? 
+        addressM[15],    // Address in data memory (of M)
+        pc[15];          // address of next instruction
+
+    PARTS:
+    // Put your code here:
+    
+    //
+    // Instruction[3..5] Dest Codes:
+    // 0 0 0 == null
+    // 0 0 1 == M
+    // 0 1 0 == D
+    // 0 1 1 == M + D
+    // 1 0 0 == A
+    // 1 0 1 == A + M
+    // 1 1 0 == A + D
+    // 1 1 1 == A + M + D    
+   
+   
+    // Registers and ALU 
+    //
+    // Register input is controlled by the Dest codes and Instruction type. 
+    //
+    // A Register:  
+    // If A Instruction then load instruction.
+    // If C Instruction AND instruction[5] == 1 then load outM.
+    // D Register: 
+    // If C Instruction AND instruction[4] == 1 then load outM.
+    
+    
+    Mux16 (a=instruction, b=outM2, sel=instruction[15], out=Mux16Aout);
+
+    // A Register must load if Instruction == A OR C Instruction AND Dest == A:
+    // Invert instruction[15] so that True == A Instruction:
+    Not (in=instruction[15], out=InvertedInstruction15);
+    
+    // Check if Dest == A AND InstructionType == True:
+    And (a=instruction[5], b=instruction[15], out=ADestTrue);
+    
+    // Load A Register if ADestTrue OR InvertedInstruction15 == True:
+    Or (a=InvertedInstruction15, b=ADestTrue, out=ARegisterControl);
+    
+    // Load D Register if instruction[15] AND instruction[4] == True:
+    And (a=instruction[4], b=instruction[15], out=DDestTrue);
+    
+    // A Register:
+    Register (in=Mux16Aout, load=ARegisterControl, out[0..14]=addressM, out=ARegisterOut, out=ARegisterOut2); 
+    // D Register:  
+    Register (in=outM3, load=DDestTrue, out=DRegisterOut);  
+
+    // A Register / inM Input to ALU:
+    // Load A Register if: 
+    //  instruction[15] == 0
+    //  instruction[15] == 1 AND instruction[12] == 0
+    // Load inM if:
+    //  instruction[15] == 1 AND instruction[12] == 1
+    //    
+    // Sel0 = instruction[15] 
+    // Sel1 = instruction[12]
+    // A = ARegisterOut
+    // B = ARegisterOut
+    // C = ARegisterOut
+    // D = inM
+    // Mux4Way16 Truth Table:
+    // Sel | Output
+    // 00  | A
+    // 01  | B
+    // 10  | C
+    // 11  | D
+    Mux4Way16 (a=ARegisterOut, b=ARegisterOut, c=ARegisterOut, d=inM, sel[0]=instruction[15], sel[1]=instruction[12], out=Mux4Way16out);
+    
+    // WriteM == True if Dest == M AND C instruction == True
+    And (a=instruction[3], b=instruction[15], out=writeM);
+
+    ALU (x=DRegisterOut, y=Mux4Way16out, zx=instruction[11], nx=instruction[10], zy=instruction[9], ny=instruction[8], f=instruction[7], no=instruction[6], zr=zr, ng=ng, out=outM2, out=outM3, out=outM);
+    
+    // Program Counter:
+    PC (in=ARegisterOut2, load=jumptrue, inc=increment, reset=reset, out[0..14]=pc); // Program Counter
+
+    // increment PC if not resetting:
+    Not (in=reset, out=increment); 
+    
+    // JUMPING
+    // Jump Codes provide a conditional statement to check against 
+    // the ALU output (via the zr and ng outs) to determine if a
+    // jump should occur. If the output passes the conditional
+    // then load the A register into the Program Counter.
+    //
+    // 
+    // 1. Identify Jump Code.
+    // 2. Check which Jump Code inequalites match the ALU output. 
+    // 3. Check if C Instruction.
+    // 4. Jump.
+    // 
+    //
+    // Instruction[0..2] Jump Codes:
+    // 0 0 0 == null (no jump)
+    // 0 0 1 == JGT
+    // 0 1 0 == JEQ
+    // 0 1 1 == JGE
+    // 1 0 0 == JLT
+    // 1 0 1 == JNE
+    // 1 1 0 == JLE
+    // 1 1 1 == JMP (unconditional jump)
+    //
+    // ALU output control variables:
+    // !zr + ng -> outM < 0
+    // !zr + !ng -> out M > 0
+    // zr -> outM = 0
+    // zr | ng -> outM <= 0
+    // zr | !ng -> outM >= 0
+   
+    // Jump Greater Than (JGT):
+    Not (in=ng, out=notng); // True == Greater Than
+    Not (in=zr, out=notzr); // True == Not Zero
+    And (a=notng, b=notzr, out=notNGZR);
+    And (a=notNGZR, b=instruction[0], out=JGTpasses); // !ng + JGT == True
+    
+    // Jump Equal To (JEQ):
+    And (a=zr, b=instruction[1], out=JEQpasses); // zr + JEQ == True
+    
+    // Jump Greater Than or Equal To (JGE):
+    Or (a=JEQpasses, b=JGTpasses, out=JGEpasses); // JEQpasses + JGTpasses == True
+    
+    // Jump Less Than (JLT):
+    And (a=ng, b=instruction[2], out=JLTpasses); // ng + JLT == True
+    
+    // Jump Not Equals (JNE):
+    Or (a=JLTpasses, b=JGTpasses, out=JNEpasses); // JLTpasses | JGTpasses == True
+    
+    // Jump Less Than or Equal To (JLE):
+    Or (a=JLTpasses, b=JEQpasses, out=JLEpasses); // JLEpasses + JEQpasses == True
+    
+    // Unconditional Jump (JMP):
+    And (a=JGEpasses, b=JLEpasses, out=JMPpasses); // JMP == True
+    
+    // Check if Atleast one Jump Condition is True:
+    Or8Way (in[0]=JGTpasses, in[1]=JEQpasses, in[2]=JGEpasses, in[3]=JLTpasses, in[4]=JNEpasses, in[5]=JLEpasses, in[6]=JMPpasses, in[7]=false, out=prejump); 
+    
+    // Check if C Instruction And Prejump are True:
+    And (a=instruction[15], b=prejump, out=jumptrue);
+
+
+
+
+}
