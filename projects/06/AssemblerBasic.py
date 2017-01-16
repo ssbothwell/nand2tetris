@@ -111,29 +111,28 @@ for index, instruction in enumerate(asmArray):
         instruc = [] 
 
         # Check for dest code, append if present or append null
-        if '=' in instruction[0]:
-            dest = instruction[0].split('=', 1)[0]
-        else: 
+        if '=' in instruction:
+            dest = instruction.split('=', 1)[0]
+        else:
             dest = 'null'
 
         # Check for op code and append 
-        if '=' in instruction[0]:
-            op = instruction[0].split('=', 1)[1]
+        if '=' in instruction:
+            op = instruction.split('=', 1)[1]
             if ';' in op:
                 op = op.split(';', 1)[0]
         else:
-            op = instruction[0].split(';', 1)[0]
+            op = instruction.split(';', 1)[0]
 
         # Check for dest code and append
-        if ';' in instruction[0]:
-            jump = instruction[0].split(';', 1)[1]
+        if ';' in instruction:
+            jump = instruction.split(';', 1)[1]
         else:
             jump = 'null'
 
         # replace instruction in asmArry with binary form by calling
         # op, dest, jump dictionaries to get binary values:
         asmArray[index] = '111' + opCodes[op] + destCodes[dest] + jumpCodes[jump]
-
 
 # write to a .hack file
 name = sys.argv[1].split('.', 1)[0] + '.hack'
