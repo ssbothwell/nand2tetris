@@ -8,7 +8,7 @@ asmArray = []
 # removing all white space, comments, and linebreaks
 # loading actual code into asmArray list.
 for line in file:
-    if not line.startswith('//') and line != '\n':
+    if line.rstrip() and not line.startswith('//'):
         asmArray.append(line.rstrip())
 
 # A-instructions begin with `@` character
