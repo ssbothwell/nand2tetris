@@ -81,7 +81,8 @@ symbolTable =   {
                 }
 
 file = open(sys.argv[1], 'r')
-asmArray = []
+# Copy assembly into a list and strip white space
+asmArray = [ line.rstrip() for line in file if line.rstrip() and not line.startswith('//') ]
 
 def checkInstruction(instruction):
     """ Returns instruction type as a string (A, C, S) """
@@ -102,14 +103,11 @@ def writeFile(array, fileName):
     for line in asmArray:
         hackFile.write(line+'\n')
 
+def removeWhiteSpace(string):
+    if string.rstrip() and not string.startswith('//'):
+        return string
 
-
-# Loop 0:
-# remove all white space, comments, and linebreaks
-# while loading actual code into asmArray list.
-for line in file:
-    if line.rstrip() and not line.startswith('//'):
-        asmArray.append(line.rstrip())
+#strippedFile = map(removeWhiteSpace, file)
 
 # A-instructions: @value 
 # C-instructions: dest = opcode;jump
