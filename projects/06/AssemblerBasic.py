@@ -83,10 +83,30 @@ symbolTable =   {
 file = open(sys.argv[1], 'r')
 asmArray = []
 
+def checkInstruction(instruction):
+    """ Returns instruction type as a string (A, C, S) """
+    if instruction.startswith('@'):
+        return 'A'
+    elif instruction.startswith('('):
+        return 'S'
+    else:
+        return 'C'
+
+def writeFile(array, fileName):
+    """ Write an array to a file """
+    #name = sys.argv[1].split('.', 1)[0] + '.hack'
+    name = fileName + '.hack'
+
+    hackFile = open(name, 'w')
+
+    for line in asmArray:
+        hackFile.write(line+'\n')
+
+
+
 # Loop 0:
-# Load assembly file and iterate line by line
-# removing all white space, comments, and linebreaks
-# loading actual code into asmArray list.
+# remove all white space, comments, and linebreaks
+# while loading actual code into asmArray list.
 for line in file:
     if line.rstrip() and not line.startswith('//'):
         asmArray.append(line.rstrip())
@@ -105,10 +125,10 @@ for line in file:
 # if C then put codes into a list as [ dest, op, jump ] 
 for index, instruction in enumerate(asmArray):
     # if it is an A-instruction then convert to a 16bit number
-    if instruction.startswith('@'):
+    if checkInstruction(instruction) == 'A':
         asmArray[index] = '{0:016b}'.format(int(instruction[1:]))
-    else:
-        instruc = [] 
+    elif checkInstruction(instruction) == 'C':
+        instruc = []
 
         # Check for dest code, append if present or append null
         if '=' in instruction:
@@ -134,11 +154,7 @@ for index, instruction in enumerate(asmArray):
         # op, dest, jump dictionaries to get binary values:
         asmArray[index] = '111' + opCodes[op] + destCodes[dest] + jumpCodes[jump]
 
-# write to a .hack file
-name = sys.argv[1].split('.', 1)[0] + '.hack'
-hackFile = open(name, 'w')
-
-for line in asmArray:
-    hackFile.write(line+'\n')
-
 file.close()
+
+# write to a .hack file
+writeFile(asmArray, sys.argv[1].split('.', 1)[0])
