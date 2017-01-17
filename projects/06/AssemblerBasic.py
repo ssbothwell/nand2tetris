@@ -110,15 +110,15 @@ def checkInstruction(instruction):
         # return op, dest, jump values from dictionaries
         return '111' + opCodes[op] + destCodes[dest] + jumpCodes[jump]
 
-def writeFile(array, fileName):
+def writeFile(array):
     """ Write an array to a file """
-    #name = sys.argv[1].split('.', 1)[0] + '.hack'
-    name = fileName + '.hack'
+    name = sys.argv[1].split('.', 1)[0] + '.hack'
     hackFile = open(name, 'w')
     for line in asmArray:
         hackFile.write(line+'\n')
 
 def removeWhiteSpace(string):
+    """ Strip white space and comments from string """
     if string.rstrip() and not string.startswith('//'):
         return string
 
@@ -138,10 +138,7 @@ file.close()
 # D=A;JLT   (dest = opcode;jump)    1110110000010100
 # A;JNE     (opcode;jump)           1110110000000101
 
-# Identify instructions as A or C, if A then convert to binary
-# if C then put codes into a list as [ dest, op, jump ] 
-for index, instruction in enumerate(asmArray):
-    asmArray[index] = checkInstruction(instruction)
-
+# Map checkInstruction to asmArray to convert to binary
+asmArray = [ checkInstruction(instruction) for instruction in asmArray ]
 # write to a .hack file
-writeFile(asmArray, sys.argv[1].split('.', 1)[0])
+writeFile(asmArray)
