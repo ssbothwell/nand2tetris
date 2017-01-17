@@ -117,26 +117,12 @@ def writeFile(array):
     for line in asmArray:
         hackFile.write(line+'\n')
 
-def removeWhiteSpace(string):
-    """ Strip white space and comments from string """
-    if string.rstrip() and not string.startswith('//'):
-        return string
-
 # Load assembly file
 file = open(sys.argv[1], 'r')
 # Copy assembly into a list and strip white space
 asmArray = [ line.rstrip() for line in file if line.rstrip() and not line.startswith('//') ]
 # Close file after copying to list
 file.close()
-
-# A-instructions: @value 
-# C-instructions: dest = opcode;jump
-
-# C-instructions can have either empty dest or jump codes.
-# examples with binary translations:
-# D=A       (dest = opcode)         1110110000010000
-# D=A;JLT   (dest = opcode;jump)    1110110000010100
-# A;JNE     (opcode;jump)           1110110000000101
 
 # Map checkInstruction to asmArray to convert to binary
 asmArray = [ checkInstruction(instruction) for instruction in asmArray ]
