@@ -80,54 +80,13 @@ symbolTable =   {
                 'KBD':     '24576',
                 }
 
-file = open(sys.argv[1], 'r')
-# Copy assembly into a list and strip white space
-asmArray = [ line.rstrip() for line in file if line.rstrip() and not line.startswith('//') ]
-
 def checkInstruction(instruction):
     """ Returns instruction type as a string (A, C, S) """
     if instruction.startswith('@'):
-        return 'A'
+        return '{0:016b}'.format(int(instruction[1:]))
     elif instruction.startswith('('):
         return 'S'
     else:
-        return 'C'
-
-def writeFile(array, fileName):
-    """ Write an array to a file """
-    #name = sys.argv[1].split('.', 1)[0] + '.hack'
-    name = fileName + '.hack'
-
-    hackFile = open(name, 'w')
-
-    for line in asmArray:
-        hackFile.write(line+'\n')
-
-def removeWhiteSpace(string):
-    if string.rstrip() and not string.startswith('//'):
-        return string
-
-#strippedFile = map(removeWhiteSpace, file)
-
-# A-instructions: @value 
-# C-instructions: dest = opcode;jump
-
-# C-instructions can have either empty dest or jump codes.
-# examples with binary translations:
-# D=A       (dest = opcode)         1110110000010000
-# D=A;JLT   (dest = opcode;jump)    1110110000010100
-# A;JNE     (opcode;jump)           1110110000000101
-
-# Loop 1:
-# Identify instructions as A or C, if A then convert to binary
-# if C then put codes into a list as [ dest, op, jump ] 
-for index, instruction in enumerate(asmArray):
-    # if it is an A-instruction then convert to a 16bit number
-    if checkInstruction(instruction) == 'A':
-        asmArray[index] = '{0:016b}'.format(int(instruction[1:]))
-    elif checkInstruction(instruction) == 'C':
-        instruc = []
-
         # Check for dest code, append if present or append null
         if '=' in instruction:
             dest = instruction.split('=', 1)[0]
@@ -148,11 +107,41 @@ for index, instruction in enumerate(asmArray):
         else:
             jump = 'null'
 
-        # replace instruction in asmArry with binary form by calling
-        # op, dest, jump dictionaries to get binary values:
-        asmArray[index] = '111' + opCodes[op] + destCodes[dest] + jumpCodes[jump]
+        # return op, dest, jump values from dictionaries
+        return '111' + opCodes[op] + destCodes[dest] + jumpCodes[jump]
 
+def writeFile(array, fileName):
+    """ Write an array to a file """
+    #name = sys.argv[1].split('.', 1)[0] + '.hack'
+    name = fileName + '.hack'
+    hackFile = open(name, 'w')
+    for line in asmArray:
+        hackFile.write(line+'\n')
+
+def removeWhiteSpace(string):
+    if string.rstrip() and not string.startswith('//'):
+        return string
+
+# Load assembly file
+file = open(sys.argv[1], 'r')
+# Copy assembly into a list and strip white space
+asmArray = [ line.rstrip() for line in file if line.rstrip() and not line.startswith('//') ]
+# Close file after copying to list
 file.close()
+
+# A-instructions: @value 
+# C-instructions: dest = opcode;jump
+
+# C-instructions can have either empty dest or jump codes.
+# examples with binary translations:
+# D=A       (dest = opcode)         1110110000010000
+# D=A;JLT   (dest = opcode;jump)    1110110000010100
+# A;JNE     (opcode;jump)           1110110000000101
+
+# Identify instructions as A or C, if A then convert to binary
+# if C then put codes into a list as [ dest, op, jump ] 
+for index, instruction in enumerate(asmArray):
+    asmArray[index] = checkInstruction(instruction)
 
 # write to a .hack file
 writeFile(asmArray, sys.argv[1].split('.', 1)[0])
