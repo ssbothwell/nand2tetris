@@ -14,14 +14,15 @@ def checkPattern(string, pattern):
 def counter():
     """ A closure for tracking labels """
     foo = {'bar': 0}
-    def inner():
+    def increment():
         foo['bar'] += 1
         return foo['bar']
 
     def printVal():
         return foo['bar']
 
-    return inner
+    return { 'increment': increment, 'printVal': printVal }
+
 symbolCounter = counter()
 
 def checkLabels(instruction, index, table):
@@ -33,7 +34,8 @@ def checkLabels(instruction, index, table):
     labelResult = checkPattern(instruction, labelRegex)
     if labelResult:
         if labelResult[0] not in symbolTable:
-            symbolTable[labelResult[0]] = index - symbolCounter()
+            symbolTable[labelResult[0]] = index - symbolCounter['printVal']()
+            symbolCounter['increment']()
     else:
         return instruction
 
