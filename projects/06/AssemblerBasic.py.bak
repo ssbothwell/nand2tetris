@@ -1,0 +1,170 @@
+#!/usr/bin/env python
+import os, sys, re
+from assemblerFunctions import * 
+
+opCodes = { 
+            '0':    '0101010',
+            '1':    '0111111',
+            '-1':   '0111010',
+            'D':    '0001100',
+            'A':    '0110000',
+            'M':    '1110000',
+            '!D':   '0001111',
+            '!A':   '0110001',
+            '!M':   '1110001',
+            '-D':   '0001111',
+            '-A':   '0110011',
+            '-M':   '1110011',
+            'D+1':  '0011111',
+            'A+1':  '0110111',
+            'M+1':  '1110111',
+            'D-1':  '0001110',
+            'A-1':  '0110010',
+            'M-1':  '1110010',
+            'D+A':  '0000010',
+            'D+M':  '1000010',
+            'D-A':  '0010011',
+            'D-M':  '1010011',
+            'A-D':  '0000111',
+            'M-D':  '1000111',
+            'D&A':  '0000000',
+            'D&M':  '1000000',
+            'D|A':  '0010101',
+            'D|M':  '1010101',
+        }
+
+destCodes = {
+                'null': '000',
+                'M':    '001',
+                'D':    '010',
+                'MD':   '011',
+                'A':    '100',
+                'AM':   '101',
+                'AD':   '110',
+                'AMD':  '111',
+            }
+
+jumpCodes = {
+                'null': '000',
+                'JGT':  '001',
+                'JEQ':  '010',
+                'JGE':  '011',
+                'JLT':  '100',
+                'JNE':  '101',
+                'JLE':  '110',
+                'JMP':  '111',
+            }
+
+symbolTable =   {
+                'SP':      '0',
+                'LCL':     '1',
+                'ARG':     '2',
+                'THIS':    '3',
+                'THAT':    '4',
+                'R0':      '0',
+                'R1':      '1',
+                'R2':      '2',
+                'R3':      '3',
+                'R4':      '4',
+                'R5':      '5',
+                'R6':      '6',
+                'R7':      '7',
+                'R8':      '8',
+                'R9':      '9',
+                'R10':     '10',
+                'R11':     '11',
+                'R12':     '12',
+                'R13':     '13',
+                'R14':     '14',
+                'R15':     '15',
+                'SCREEN':  '16384',
+                'KBD':     '24576',
+                }
+
+variablesCount = 0
+instructionsCount = 0
+
+def checkSymbols(instruction, index):
+    """ If symbols then add them to the symbol table """
+    """ and replace in instruction with memory location """
+
+    global variablesCount
+
+    # Match A-Instruction symbols
+    variableRegex = re.compile('@([a-zA-Z0-9_:.$]+)')
+    variable = variableRegex.search(instruction)
+
+    # Match label symbols
+    labelRegex = re.compile('\(([a-zA-Z0-9_.$:]+)\)')
+    label = labelRegex.search(instruction)
+
+    # Check for standard symbols and substitute them in
+    if variable and variable.group(1) in symbolTable:
+        return '@' + str(symbolTable[variable.group(1)])
+
+    elif label:
+        if label.group(1) not in symbolTable:
+            variablesCount += 1
+            symbolTable[label.group(1)] = index
+
+    elif variable and variable.group(1) not in symbolTable:
+        variablesCount += 1
+        symbolTable[variable.group(1)] = variablesCount + 15
+        return '@' + str(symbolTable[variable.group(1)])
+
+    else:
+        return instruction
+
+def checkInstruction(instruction):
+    """ Convert instruction to binary """
+
+    # Match instructions with  no symbols
+    aRegex = re.compile('@([0-9]+)')
+    aInstruction = aRegex.search(instruction)
+    cRegex = re.compile('(?:([AMD]{1,3})=)?([AMD01\-+!&|]{1,3})(?:;([JGTEQLNMP]{3}))?')
+    cInstruction = cRegex.search(instruction)
+
+    if aInstruction:
+        return '{0:016b}'.format(int(aInstruction.group(1)))
+    elif cInstruction:
+        # Check for dest code, append if present or append null
+        if cInstruction.group(1):
+            dest = cInstruction.group(1)
+        else:
+            dest = 'null'
+
+        # Check for op code and append 
+        if cInstruction.group(2):
+            op = cInstruction.group(2)
+
+        # Check for dest code and append
+        if cInstruction.group(3):
+            jump = cInstruction.group(3)
+        else:
+            jump = 'null'
+
+        # return op, dest, jump values from dictionaries
+        return '111' + opCodes[op] + destCodes[dest] + jumpCodes[jump]
+
+def writeFile(array):
+    """ Write an array to a file """
+    name = sys.argv[1].split('.', 1)[0] + '.hack'
+    hackFile = open(name, 'w')
+    for line in asmArray:
+        hackFile.write(line+'\n')
+
+# Load assembly file
+file = open(sys.argv[1], 'r')
+# Copy assembly into a list and strip white space
+asmArray = [ line.rstrip() for line in file if line.rstrip() and not line.startswith('//') ]
+# Close file after copying to list
+file.close()
+
+# Map checkSymbols to asmArray to replace variables 
+# and update symbolTable
+asmArray = [ checkSymbols(instruction, index) for index, instruction in enumerate(asmArray) ]
+print asmArray
+# Map checkInstruction to asmArray to convert to binary
+asmArray = [ checkInstruction(instruction) for instruction in asmArray  if instruction is not None]
+# write to a .hack file
+writeFile(asmArray)
