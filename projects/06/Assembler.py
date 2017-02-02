@@ -88,10 +88,11 @@ asmArray = [ line.rstrip() for line in file if line.rstrip() and not line.starts
 file.close()
 
 # Check for (LABELS) 
-asmArray = [ checkLabels(instruction, index, symbolTable) for index, instruction in enumerate(asmArray) ]
+asmArray = [ checkLabel(instruction, index, symbolTable) for index, instruction in enumerate(asmArray) ]
 # Check for @VARIABLES
 asmArray = [ checkVariables(instruction, symbolTable) for instruction in asmArray if instruction is not None]
 # Convert to binary
+print asmArray
 asmArray = [ checkInstruction(instruction, opCodes, destCodes, jumpCodes) for instruction in asmArray  if instruction is not None]
 # write to a .hack file
 writeFile(asmArray)

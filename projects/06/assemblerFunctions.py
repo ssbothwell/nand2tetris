@@ -25,7 +25,7 @@ def counter():
 
 symbolCounter = counter()
 
-def checkLabels(instruction, index, table):
+def checkLabel(instruction, index, table):
     """ Add labels to symbolTable referencing their index"""
     symbolTable = table
 
@@ -55,28 +55,30 @@ def checkVariables(instruction, table):
 
         elif variableResult[0] not in symbolTable:
             variableKey = max([ val for key, val in table.items() if val < 16384]) + 1
-            symbolTable[variableResult[0]] = variablesKey
+            symbolTable[variableResult[0]] = variableKey
             return '@' + str(symbolTable[variableResult[0]])
 
     else:
         return instruction
 
-def checkInstruction(instruction, opCodes, destCodes, jumpCodes):
+def checkInstruction(instruction, dest, op, jump):
     """ Convert instruction to binary """
 
-    opCodes = opCodes
-    destCodes = destCodes
-    jumpCodes = jumpCodes
+    opCodes = op
+    destCodes = dest
+    jumpCodes = jump
 
-    # Match instructions with  no symbols
+    # Match instructions with no symbols
     aRegex = '@([0-9]+)'
     aResult = checkPattern(instruction, aRegex)
     cRegex = '(?:([AMD]{1,3})=)?([AMD01\-+!&|]{1,3})(?:;([JGTEQLNMP]{3}))?'
     cResult= checkPattern(instruction, cRegex)
 
     if aResult:
+        # @1234
         return '{0:016b}'.format(int(aResult[0]))
     elif cResult:
+        # dest=op;jump
         # Check for dest code, append if present or append null
         if cResult[0]:
             dest = cResult[0]
