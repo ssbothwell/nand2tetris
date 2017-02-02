@@ -80,6 +80,8 @@ symbolTable =   {
                 'KBD':     24576,
                 }
 
+labelTable = {}
+
 # Load assembly file
 file = open(sys.argv[1], 'r')
 # Copy assembly into a list and strip white space
@@ -88,11 +90,10 @@ asmArray = [ line.rstrip() for line in file if line.rstrip() and not line.starts
 file.close()
 
 # Check for (LABELS) 
-asmArray = [ checkLabel(instruction, index, symbolTable) for index, instruction in enumerate(asmArray) ]
+asmArray = [ checkLabel(instruction, index, labelTable) for index, instruction in enumerate(asmArray) ]
 # Check for @VARIABLES
-asmArray = [ checkVariables(instruction, symbolTable) for instruction in asmArray if instruction is not None]
+asmArray = [ checkVariables(instruction, symbolTable, labelTable) for instruction in asmArray if instruction is not None]
 # Convert to binary
-print asmArray
-asmArray = [ checkInstruction(instruction, opCodes, destCodes, jumpCodes) for instruction in asmArray  if instruction is not None]
+asmArray = [ checkInstruction(instruction, destCodes, opCodes, jumpCodes) for instruction in asmArray  if instruction is not None]
 # write to a .hack file
 writeFile(asmArray)

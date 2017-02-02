@@ -27,34 +27,38 @@ symbolCounter = counter()
 
 def checkLabel(instruction, index, table):
     """ Add labels to symbolTable referencing their index"""
-    symbolTable = table
+    labelTable = table
 
     # Match label symbols
     labelRegex = '\(([a-zA-Z0-9_.$:]+)\)'
     labelResult = checkPattern(instruction, labelRegex)
     if labelResult:
-        if labelResult[0] not in symbolTable:
-            symbolTable[labelResult[0]] = index - symbolCounter['printVal']()
+        if labelResult[0] not in labelTable:
+            labelTable[labelResult[0]] = index - symbolCounter['printVal']()
             symbolCounter['increment']()
     else:
         return instruction
 
-def checkVariables(instruction, table):
+def checkVariables(instruction, symbolTable, labelTable):
     """ If symbols then add them to the symbol table """
     """ and replace in instruction with memory location """
 
-    symbolTable = table
+    symbolTable = symbolTable
+    lableTable = labelTable
 
     # Match A-Instruction symbols
     variableRegex = '@([a-zA-Z_:.$][\w\d:.$]+)'
     variableResult = checkPattern(instruction, variableRegex)
 
     if variableResult:
-        if variableResult[0] in symbolTable:
+        if variableResult[0] in labelTable:
+            return '@' + str(labelTable[variableResult[0]])
+
+        elif variableResult[0] in symbolTable: 
             return '@' + str(symbolTable[variableResult[0]])
 
-        elif variableResult[0] not in symbolTable:
-            variableKey = max([ val for key, val in table.items() if val < 16384]) + 1
+        elif variableResult[0] not in symbolTable and variableResult not in labelTable:
+            variableKey = max([ val for key, val in symbolTable.items() if val < 16384]) + 1
             symbolTable[variableResult[0]] = variableKey
             return '@' + str(symbolTable[variableResult[0]])
 
