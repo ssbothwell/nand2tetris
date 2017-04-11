@@ -64,63 +64,78 @@ D;JEQ // Jump to @CLEAR if @KBD == 0
 
 // Screen Fill Loop
 (LOOP)
-@i
-D=M
-@n
-D=D-M
-@END
-D;JGT // if i > n goto END
+  @i
+  D=M
+  @n
+  D=D-M
+  @KBD_LOOP
+  D;JGT // if i > n goto END
 
     // Nested Loop for Filling Columns
-    (LOOP2)
-    @i2
-    D=M
-    @n2
-    D=D-M
-    @END2
-    D;JGT // if i2 > n2 goto END2
+    //(LOOP2)
+    //@i2
+    //D=M
+    //@n2
+    //D=D-M
+    //@END2
+    //D;JGT // if i2 > n2 goto END2
 
-    
     @addr
     A=M
     M=-1 // RAM[addr]= 1111111111111111
     
-    @i2
-    D=M
-    @addr
-    A=M+D
-    M=-1 // RAM[addr+2]= 1111111111111111
+    //@2
+    //D=A
+    ////@i2
+    ////D=M
+    //@addr
+    //A=M+D
+    //M=-1 // RAM[addr+2]= 1111111111111111
+    //
+    //@1
+    //D=A
+    //@i2
+    //M=M+D // Increase i2 by two
     
-    @2
-    D=A
-    @i2
-    M=M+D // Increase i2 by two
-    
-    @LOOP2
-    0;JMP // Repeat LOOP2
+    //@LOOP2
+    //0;JMP // Repeat LOOP2
     
     
-(END2)
-@i2
-M=0
-
-@i
-M=M+1 // i = i + 1
-@32
-D=A
-@addr
-M=D+M // addr = addr + 32
-
-@LOOP
-0;JMP // goto LOOP
+  //(END2)
+  @i2
+  M=0
+  
+  @i
+  M=M+1 // i = i + 1
+  @32
+  D=A
+  @addr
+  M=D+M // addr = addr + 32
+  
+  @LOOP
+  0;JMP // goto LOOP
 // End Screen Fill Loop
 
-//// Screen Clear
-//(CLEAR)
-//@addr
-//M=0
-//@KBD_LOOP
-//0;JMP // Repeat KBD_Loop
+// Screen Clear
+(CLEAR)
+  @i
+  D=M
+  @n
+  D=D-M
+  @END
+  D;JGT // if i > n goto END
+  
+  @addr
+  A=M
+  M=0 // RAM[addr]= 1111111111111111
+  
+  @32
+  D=A
+  @addr
+  M=D+M // addr = addr + 32
+  
+  @KBD_LOOP
+  0;JMP // Repeat KBD_Loop
 
 // Program End loop
 (END)

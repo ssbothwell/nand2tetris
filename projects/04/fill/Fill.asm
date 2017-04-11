@@ -1,103 +1,104 @@
-// This file is part of www.nand2tetris.org
-// and the book "The Elements of Computing Systems"
-// by Nisan and Schocken, MIT Press.
-// File name: projects/04/Fill.asm
+// Main Loop
+(KBD_LOOP)
 
-// Runs an infinite loop that listens to the keyboard input. 
-// When a key is pressed (any key), the program blackens the screen,
-// i.e. writes "black" in every pixel. When no key is pressed, the
-// program clears the screen, i.e. writes "white" in every pixel.
-
-// Put your code here.
-
-// initialize incrementer
+// Instantiate Variables
+// Draw loop iterator
 @i
 M=0
-// addr = 16384
+// Draw loop terminator
+@255
+D=A
+@n
+M=D
+// Draw Value
+@0
+D=A
+@Color
+M=D
+// Screen Address
 @SCREEN
 D=A
 @addr
-M=D 
-    
-// Main Program
+M=D
 
-// Keyboard Scan Loop
-(KBD_LOOP)
-@i
+// Set Color on keypress
+@Color
+M=-1
+// Jump on keypress
+@KBD
+D=M
+@DRAW
+D;JGT
+
+// Clear Screen
+@Color
 M=0
+@DRAW
+D;JMP
+// End Main Loop
 
-@KBD
-D=M
-@LOOP
-D;JGT // Jump to @LOOP if @KBD > 0
 
-@KBD
-D=M
-@CLEAR
-D;JEQ // Jump to CLEAR if @KBD == 0
-
-@KBD_LOOP
-0;JMP // Repeat KBD_Loop
-// End Keyboard Scan Loop
-
-// Screen Fill Loop
-(LOOP)
-
-// Check if i has reached end of screen map
-@8160
-D=A
-@i
-D=D-M
-@KBD_LOOP
-D;JEQ // Jump to @KBD_LOOP if i reaches end of screen map
-
-// Add i to addr and set M = -1
-@i
-D=M
-@addr
-A=M+D
-M=-1 
-
+// Draw Loop
+(DRAW)
 // Iterate i
 @i
 M=M+1
+// Draw to screen
+  // Draw Inner Loop
+  // Reset Addr
+  // instantiate iterator j
+  @j
+  M=0
+  (INNER)
+  //// Instantiate Terminator m
+  @32
+  D=A
+  @m
+  M=D
 
-@KBD
-D=M
-@KBD_LOOP
-D;JEQ // Jump to @KBD_LOOP if @KBD == 0
-
-@LOOP
-0;JMP // goto LOOP
-// End Screen Fill Loop
-
-// Screen Clear
-(CLEAR)
-
-// Check if i has reached end of screen map
-@8160
+  // Draw next column 
+  @addr
+  D=M
+  @Column
+  M=D
+  @j
+  D=M
+  @Column
+  M=M+D
+  @Color
+  D=M
+  @Column
+  A=M
+  M=D
+  
+  // Iteratate J
+  @j
+  M=M+1
+  // Check if m-j == 0
+  @m
+  D=M
+  @j
+  D=D-M
+  @OUTER
+  D;JEQ
+  // Jump to (INNER)
+  @INNER
+  0;JMP
+  // End Inner Loop
+(OUTER)
+// Update addr to next row
+@32
 D=A
+@addr
+M=D+M // addr = addr + 32
+// Terminate if i > n (16)
 @i
+D=M
+@n
 D=D-M
 @KBD_LOOP
-D;JEQ // Jump to @KBD_LOOP if i reaches end of screen map
-
-// Add i to addr and set M = -1
-@i
-D=M
-@addr
-A=M+D
-M=0 
-
-// Iterate i
-@i
-M=M+1
-
-@CLEAR
-0;JMP // Repeat CLEAR
-// End Screen Clear
-
-// Program End loop
-(END)
-@END
+D;JGT
+// Draw Loop Jump
+@DRAW
 0;JMP
+// End Draw Loop
