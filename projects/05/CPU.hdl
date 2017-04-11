@@ -82,7 +82,7 @@ CHIP CPU {
     // A Register:
     Register (in=Mux16Aout, load=ARegisterControl, out[0..14]=addressM, out=ARegisterOut, out=ARegisterOut2); 
     // D Register:  
-    Register (in=outM3, load=DDestTrue, out=DRegisterOut);  
+    DRegister (in=outM3, load=DDestTrue, out=DRegisterOut);  
 
     // A Register / inM Input to ALU:
     // Load A Register if: 
